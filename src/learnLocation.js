@@ -3,7 +3,7 @@ const fs = require('fs')
 const scanner = require('node-wifi-scanner')
 let logStream
 
-function scan(){
+function scanForWifi(){
   return new Promise( (resolve, reject) => {
     console.log('log: scanning...');
     scanner.scan((err, networks) => {
@@ -12,14 +12,60 @@ function scan(){
         return
       }
 
-      let rssiList = networks.sort(sortWifiByName).reduce( (prev,elm)=>{
-        prev[elm.mac] = dbToFloat(elm.rssi)
-        return prev
-      },{})
-
-      resolve(rssiList)
+      console.log('number of wifis detected: ' + networks.length);
+      resolve(networks.sort(sortWifiByName))
     });
+  })
+}
 
+function saveTrain(rssiList){
+  return new Promise( (resolve, reject) => {
+    createTrainArray(rssiList)
+    .then(rssiTrainList =>{
+      resolve(rssiTrainList)
+    })
+  })
+}
+
+function createTrainArray(wifiArray) {
+  return new Promise( (resolve, reject) => {
+    resolve( wifiArray.reduce( (prev,elm)=>{
+      prev[elm.mac] = dbToFloat(elm.rssi)
+      return prev
+    },{}) )
+  })
+}
+
+function renderScanInfo(wifiArray) {
+  return new Promise( (resolve, reject) => {
+
+    let rssiList = wifiArray.reduce( (prev,elm)=>{
+      prev[elm.ssid] = dbToFloat(elm.rssi)
+      return prev
+    },{})
+
+
+    let textRender = wifiArray.reduce( (prev,elm)=>{
+
+      let textLine = ''
+      textLine += elm.ssid + ':' + elm.rssi
+      while (textLine.length < 40){ textLine += ' ' }
+
+      for (let i = 0; i < 100 + elm.rssi; i++){
+        textLine += '*'
+      }
+      textLine += '\n'
+
+      return prev + textLine
+    },'')
+
+
+    console.log(textRender)
+    console.log('totalRssiCount: ' + wifiArray.reduce((prev,cur)=>{
+      return prev + 100 + cur.rssi
+    },0))
+
+    resolve()
   })
 }
 
@@ -38,44 +84,12 @@ function sortWifiByName(a,b){
 
 function scanRSSIDisplay(){
   return new Promise( (resolve, reject) => {
-    console.log('log: scanning...');
-    scanner.scan((err, networks) => {
-      if (err) {
-        console.error(err)
-        return
-      }
 
-
-      let textRender = ''
-
-      let rssiList = networks.sort(sortWifiByName).reduce( (prev,elm)=>{
-        prev[elm.ssid] = dbToFloat(elm.rssi)
-        let textLine = ''
-        textLine += elm.ssid + ':' + elm.rssi
-
-        while (textLine.length < 40){
-          textLine += ' '
-        }
-
-        for (let i = 0; i < 100 + elm.rssi; i++){
-          textLine += '*'
-        }
-
-        textLine += '\n'
-
-        textRender += textLine
-
-        return prev
-
-      },{})
-
-
-      console.log(textRender)
-
-
+    scanForWifi()
+    .then(renderScanInfo)
+    .then((rssiList)=>{
       resolve(rssiList)
-    });
-
+    })
   })
 }
 
@@ -100,22 +114,22 @@ function learnLocation(loc){
   return new Promise( (resolve, reject) => {
     locationName = loc
     logStream = fs.createWriteStream(__dirname+'/../data/rssi.txt', {'flags': 'a'})
-    scan()
-    .then(scan)
+    scanForWifi()
+    .then(scanForWifi)
     .then(addToFile)
-    .then(scan)
+    .then(scanForWifi)
     .then(addToFile)
-    .then(scan)
+    .then(scanForWifi)
     .then(addToFile)
-    .then(scan)
+    .then(scanForWifi)
     .then(addToFile)
-    .then(scan)
+    .then(scanForWifi)
     .then(addToFile)
-    .then(scan)
+    .then(scanForWifi)
     .then(addToFile)
-    .then(scan)
+    .then(scanForWifi)
     .then(addToFile)
-    .then(scan)
+    .then(scanForWifi)
     .then(addToFile)
     .then(()=>{
       logStream.end()
@@ -150,6 +164,6 @@ if (process.argv[2] !== undefined){
 module.exports = {
   dbToFloat: dbToFloat,
   learnLocation: learnLocation,
-  scan: scan,
+  scan: scanForWifi,
   showRSSI: showRSSI
 };
