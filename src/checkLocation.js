@@ -2,7 +2,7 @@
 const fs = require('fs')
 const brain = require('brain')
 const dbToFloat = require('./learnLocation').dbToFloat
-const scan = require('./learnLocation').scan
+const guessLocation = require('./learnLocation').guessLocation
 
 var neuralNetwork = new brain.NeuralNetwork();
 
@@ -35,18 +35,18 @@ function checkNetwork(input){
 function checkLocation(){
   return new Promise( (resolve, reject) => {
 
-    scan()
-    .then(scan)
+    guessLocation()
+    .then(guessLocation)
     .then(checkNetwork)
-    .then(scan)
+    .then(guessLocation)
     .then(checkNetwork)
-    .then(scan)
+    .then(guessLocation)
     .then(checkNetwork)
-    .then(scan)
+    .then(guessLocation)
     .then(checkNetwork)
-    .then(scan)
+    .then(guessLocation)
     .then(checkNetwork)
-    .then(scan)
+    .then(guessLocation)
     .then(checkNetwork)
     .then(()=>{
       resolve()

@@ -5,7 +5,7 @@ let logStream
 
 function scanForWifi(){
   return new Promise( (resolve, reject) => {
-    console.log('log: scanning...');
+    console.log('log: scanForWifi..');
     scanner.scan((err, networks) => {
       if (err) {
         console.error(err)
@@ -20,14 +20,30 @@ function scanForWifi(){
 
 function saveTrain(rssiList){
   return new Promise( (resolve, reject) => {
-    createTrainArray(rssiList)
+    convertToTrainArray(rssiList)
+    .then(addArrayToFile)
     .then(rssiTrainList =>{
       resolve(rssiTrainList)
     })
   })
 }
 
-function createTrainArray(wifiArray) {
+function addArrayToFile(data){
+  console.log('log: adding to file');
+  return new Promise( (resolve, reject) => {
+    let sample = {
+      timeStamp: Date.now(),
+      locationName: locationName,
+      data: data
+    }
+
+    logStream.write(',\n' + JSON.stringify(sample))
+    console.log(sample.timeStamp)
+    resolve()
+  })
+}
+
+function convertToTrainArray(wifiArray) {
   return new Promise( (resolve, reject) => {
     resolve( wifiArray.reduce( (prev,elm)=>{
       prev[elm.mac] = dbToFloat(elm.rssi)
@@ -93,37 +109,23 @@ function scanRSSIDisplay(){
   })
 }
 
-function addToFile(data){
-  console.log('log: adding to file');
-  return new Promise( (resolve, reject) => {
-    let sample = {
-      timeStamp: Date.now(),
-      locationName: locationName,
-      data: data
-    }
-    // console.log(sample)
-    logStream.write(',\n' + JSON.stringify(sample))
-    console.log(sample.timeStamp)
-    resolve()
-  })
-}
-
 let locationName = 'none'
 
 function learnLocation(loc){
   return new Promise( (resolve, reject) => {
     locationName = loc
     logStream = fs.createWriteStream(__dirname+'/../data/rssi.txt', {'flags': 'a'})
+    numberOfNetworks = []
     collectWifis()
-    .then(addToFile)
+    .then(saveTrain)
     .then(scanForWifi)
-    .then(addToFile)
+    .then(saveTrain)
     .then(scanForWifi)
-    .then(addToFile)
+    .then(saveTrain)
     .then(scanForWifi)
-    .then(addToFile)
+    .then(saveTrain)
     .then(scanForWifi)
-    .then(addToFile)
+    .then(saveTrain)
     .then(()=>{
       logStream.end()
       resolve()
@@ -185,9 +187,20 @@ if (process.argv[2] !== undefined){
   learnLocation(process.argv[2])
 }
 
+function guessLocation(){
+  return new Promise( (resolve, reject) => {
+    numberOfNetworks = []
+    scanForWifi()
+    .then(convertToTrainArray)
+    .then(rssiList=>{
+      resolve(rssiList)
+    })
+  })
+}
+
 module.exports = {
   dbToFloat: dbToFloat,
   learnLocation: learnLocation,
-  scan: scanForWifi,
+  guessLocation: guessLocation,
   showRSSI: showRSSI
 };
