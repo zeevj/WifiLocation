@@ -114,14 +114,7 @@ function learnLocation(loc){
   return new Promise( (resolve, reject) => {
     locationName = loc
     logStream = fs.createWriteStream(__dirname+'/../data/rssi.txt', {'flags': 'a'})
-    scanForWifi()
-    .then(scanForWifi)
-    .then(addToFile)
-    .then(scanForWifi)
-    .then(addToFile)
-    .then(scanForWifi)
-    .then(addToFile)
-    .then(scanForWifi)
+    collectWifis()
     .then(addToFile)
     .then(scanForWifi)
     .then(addToFile)
@@ -138,11 +131,42 @@ function learnLocation(loc){
   })
 }
 
+let numberOfNetworks = []
+
+
+function collectWifis(){
+  return new Promise( (resolve, reject) => {
+    scanForWifi()
+      .then(rssiList=>{
+        if (checkIfEnoughWifis(rssiList)){
+          resolve(rssiList)
+        }else{
+          resolve(collectWifis())
+        }
+      })
+  })
+}
+
+function checkIfEnoughWifis(rssiList){
+  numberOfNetworks.push(rssiList.length)
+  console.log(numberOfNetworks);
+  if (numberOfNetworks.length < 4 ){
+    return false
+  }
+
+  let length = numberOfNetworks.length
+  let elm1 = numberOfNetworks[length - 1]
+  let elm2 = numberOfNetworks[length - 2]
+  let elm3 = numberOfNetworks[length - 3]
+
+  return (elm1 === elm2 && elm2 === elm3)
+
+}
+
 function showRSSI(){
   return new Promise( (resolve, reject) => {
-    scanRSSIDisplay()
-    .then(scanRSSIDisplay)
-    .then(scanRSSIDisplay)
+    numberOfNetworks = []
+    collectWifis()
     .then(scanRSSIDisplay)
     .then(scanRSSIDisplay)
     .then(scanRSSIDisplay)
