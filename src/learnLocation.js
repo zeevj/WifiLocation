@@ -12,10 +12,66 @@ function scan(){
         return
       }
 
-      let rssiList = networks.reduce( (prev,elm)=>{
+      let rssiList = networks.sort(sortWifiByName).reduce( (prev,elm)=>{
         prev[elm.mac] = dbToFloat(elm.rssi)
         return prev
       },{})
+
+      resolve(rssiList)
+    });
+
+  })
+}
+
+
+function sortWifiByName(a,b){
+  var nameA = a.ssid.toUpperCase(); // ignore upper and lowercase
+  var nameB = b.ssid.toUpperCase(); // ignore upper and lowercase
+  if (nameA < nameB) {
+    return -1
+  }
+  if (nameA > nameB) {
+    return 1
+  }
+  return 0
+}
+
+function scanRSSIDisplay(){
+  return new Promise( (resolve, reject) => {
+    console.log('log: scanning...');
+    scanner.scan((err, networks) => {
+      if (err) {
+        console.error(err)
+        return
+      }
+
+
+      let textRender = ''
+
+      let rssiList = networks.sort(sortWifiByName).reduce( (prev,elm)=>{
+        prev[elm.ssid] = dbToFloat(elm.rssi)
+        let textLine = ''
+        textLine += elm.ssid + ':' + elm.rssi
+
+        while (textLine.length < 40){
+          textLine += ' '
+        }
+
+        for (let i = 0; i < 100 + elm.rssi; i++){
+          textLine += '*'
+        }
+
+        textLine += '\n'
+
+        textRender += textLine
+
+        return prev
+
+      },{})
+
+
+      console.log(textRender)
+
 
       resolve(rssiList)
     });
@@ -68,17 +124,32 @@ function learnLocation(loc){
   })
 }
 
+function showRSSI(){
+  return new Promise( (resolve, reject) => {
+    scanRSSIDisplay()
+    .then(scanRSSIDisplay)
+    .then(scanRSSIDisplay)
+    .then(scanRSSIDisplay)
+    .then(scanRSSIDisplay)
+    .then(scanRSSIDisplay)
+    .then(scanRSSIDisplay)
+    .then(()=>{
+      resolve()
+    })
+  })
+}
 
 function dbToFloat(num){
   return num / 100.0 + 1
 }
 
-module.exports = {
-  dbToFloat: dbToFloat,
-  learnLocation: learnLocation,
-  scan: scan
-};
-
 if (process.argv[2] !== undefined){
   learnLocation(process.argv[2])
 }
+
+module.exports = {
+  dbToFloat: dbToFloat,
+  learnLocation: learnLocation,
+  scan: scan,
+  showRSSI: showRSSI
+};

@@ -5,6 +5,7 @@ const scan = require('./src/learnLocation').scan
 const learnLocation = require('./src/learnLocation').learnLocation
 const trainNetwork = require('./src/trainNetwork').trainNetwork
 const checkLocation = require('./src/checkLocation').checkLocation
+const showRSSI = require('./src/learnLocation').showRSSI
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -59,11 +60,20 @@ rl.on('line', (line) => {
                 navStack.pop()
                 renderGui()
               }
-            }, 500);
+            }, 500)
           })
-          break;
+          break
+
+        case 4:
+          console.log('starting');
+          showRSSI().then(()=>{
+            setTimeout(function () {
+              renderGui()
+            }, 500)
+          })
+          break
         default:
-          rl.close();
+          rl.close()
       }
       break
     case 'trainLocation':
@@ -115,6 +125,7 @@ function renderGui(line){
   [1] train a new location
   [2] calculate a new networks
   [3] guess where you are
+  [4] see RSSI realtime list
       `)
       break
     case 'trainLocation':
