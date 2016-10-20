@@ -18,10 +18,9 @@ function checkNetwork(input){
       let winner = 0.0
       for (let elm in output){
 
-        if  (winner < output[elm]){
+        if (winner < output[elm]){
           winner = output[elm]
           name = elm
-
         }
       }
 
