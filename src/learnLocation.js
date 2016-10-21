@@ -1,19 +1,32 @@
 'use strict';
 const fs = require('fs')
 const scanner = require('node-wifi-scanner')
+const socket = require('./server').getSocket
+
 let logStream
 
 function scanForWifi(){
   return new Promise( (resolve, reject) => {
-    console.log('log: scanForWifi..');
+
+    let text = 'log: scanForWifi..'
+    console.log(text)
+    // console.log(socket());
+
     scanner.scan((err, networks) => {
       if (err) {
         console.error(err)
         return
       }
 
-      console.log('number of wifis detected: ' + networks.length);
-      resolve(networks.sort(sortWifiByName))
+      let text = 'number of wifis detected: ' + networks.length
+      console.log(text)
+
+      let sortedNetworks = networks.sort(sortWifiByName)
+      if (socket()) {
+        socket().emit('wifiList', sortedNetworks)
+      }
+
+      resolve(sortedNetworks)
     });
   })
 }
@@ -45,21 +58,17 @@ function addArrayToFile(data){
 
 function convertToTrainArray(wifiArray) {
   return new Promise( (resolve, reject) => {
-    resolve( wifiArray.reduce( (prev,elm)=>{
-      prev[elm.mac] = dbToFloat(elm.rssi)
-      return prev
-    },{}) )
+    resolve(wifiArray.map( elm=>(
+      {}[elm.ssid] = dbToFloat(elm.rssi)
+    )))
   })
 }
 
 function renderScanInfo(wifiArray) {
   return new Promise( (resolve, reject) => {
-
-    let rssiList = wifiArray.reduce( (prev,elm)=>{
-      prev[elm.ssid] = dbToFloat(elm.rssi)
-      return prev
-    },{})
-
+    let rssiList = wifiArray.map( elm=>(
+      {}[elm.ssid] = dbToFloat(elm.rssi)
+    ))
 
     let textRender = wifiArray.reduce( (prev,elm)=>{
 
@@ -75,11 +84,17 @@ function renderScanInfo(wifiArray) {
       return prev + textLine
     },'')
 
-
-    console.log(textRender)
-    console.log('totalRssiCount: ' + wifiArray.reduce((prev,cur)=>{
+    let text = textRender
+    text += '\n'
+    text += 'totalRssiCount: ' + wifiArray.reduce((prev,cur)=>{
       return prev + 100 + cur.rssi
-    },0))
+    },0)
+
+    console.log(text)
+
+    // if (socket()) {
+    //   socket().emit('wifiList', text)
+    // }
 
     resolve()
   })
@@ -151,7 +166,12 @@ function collectWifis(){
 
 function checkIfEnoughWifis(rssiList){
   numberOfNetworks.push(rssiList.length)
-  console.log(numberOfNetworks);
+  console.log(numberOfNetworks)
+
+  if (socket()) {
+    socket().emit('text', numberOfNetworks)
+  }
+
   if (numberOfNetworks.length < 4 ){
     return false
   }
@@ -169,6 +189,10 @@ function showRSSI(){
   return new Promise( (resolve, reject) => {
     numberOfNetworks = []
     collectWifis()
+    .then(scanRSSIDisplay)
+    .then(scanRSSIDisplay)
+    .then(scanRSSIDisplay)
+    .then(scanRSSIDisplay)
     .then(scanRSSIDisplay)
     .then(scanRSSIDisplay)
     .then(scanRSSIDisplay)

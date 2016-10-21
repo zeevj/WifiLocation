@@ -3,6 +3,7 @@ const fs = require('fs')
 const brain = require('brain')
 const dbToFloat = require('./learnLocation').dbToFloat
 const guessLocation = require('./learnLocation').guessLocation
+const socket = require('./server').getSocket
 
 var neuralNetwork = new brain.NeuralNetwork();
 
@@ -14,6 +15,10 @@ function checkNetwork(input){
       var output = neuralNetwork.run(input)
       console.log(output)
 
+      if (socket) {
+        socket.emit('text', output)
+      }
+
       let name = ''
       let winner = 0.0
       for (let elm in output){
@@ -24,7 +29,12 @@ function checkNetwork(input){
         }
       }
 
-      console.log('\nTHE WINNER IS: ' + name  + ' ' + winner);
+      let text = '\nTHE WINNER IS: ' + name  + ' ' + winner
+      console.log(text);
+
+      if (socket) {
+        socket.emit('text', text)
+      }
       resolve()
     })
   })

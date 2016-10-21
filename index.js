@@ -1,11 +1,18 @@
 'use strict';
 
+let app = require('express')();
+let server = require('http').Server(app);
+const io = require('socket.io')(server);
+
 const readline = require('readline');
 const scan = require('./src/learnLocation').scan
 const learnLocation = require('./src/learnLocation').learnLocation
 const trainNetwork = require('./src/trainNetwork').trainNetwork
 const checkLocation = require('./src/checkLocation').checkLocation
 const showRSSI = require('./src/learnLocation').showRSSI
+let socket = require('./src/server').getSocket
+let setSocket = require('./src/server').setSocket
+
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -13,11 +20,11 @@ const rl = readline.createInterface({
 });
 
 
-
 let navStack = ['home']
 
-rl.on('line', (line) => {
+rl.on('line', onLineInput);
 
+function onLineInput(line){
   switch (getLast(navStack)) {
     case 'home':
       switch (parseInt(line)) {
@@ -65,7 +72,7 @@ rl.on('line', (line) => {
           break
 
         case 4:
-          console.log('starting');
+          socket().emit('text', 'starting RSSI realtime list')
           showRSSI().then(()=>{
             setTimeout(function () {
               renderGui()
@@ -113,50 +120,77 @@ rl.on('line', (line) => {
     default:
 
   }
-
-});
+}
 
 
 function renderGui(line){
+
+  let text = ''
   switch (getLast(navStack)) {
     case 'home':
-      console.log(`Walcome to The Mega super wifi location tracker
+      text = `Walcome to The Mega super wifi location tracker
   Please choose what you want to do:
   [1] train a new location
   [2] calculate a new networks
   [3] guess where you are
   [4] see RSSI realtime list
-      `)
+      `
       break
     case 'trainLocation':
-      console.log('What is the name of the location?')
+      text = 'What is the name of the location?'
       break
     case 'startingToTrain':
-      console.log('sampling rssi stregnth for location: ' + line)
+      text = 'sampling rssi stregnth for location: ' + line
       break
     case 'trainDone':
-      console.log('\ntraining completed')
+      text = '\ntraining completed'
       break
     case 'calculateNetwork':
       break
     case 'startCalculateNetwork':
-      console.log('\nstart Calculate Network')
+      text = '\nstart Calculate Network'
       break
     case 'calculateNetworkDone':
-      console.log('\nCalculate Network done\n')
+      text = '\nCalculate Network done\n'
       break
     case 'guessLocation':
-    console.log('\nguessLocation starting');
+    text = '\nguessLocation starting'
       break
     case 'guessLocationEnd':
-    console.log('\nguessLocation ended\n');
+    text = '\nguessLocation ended\n'
       break
     default:
   }
+
+
+  console.log(text)
+  
+  if ( text !== '' && socket() ) {
+    socket().emit('text', text)
+  }
+  return text
 }
 
-renderGui()
+
 
 function getLast(arr){
   return arr.slice(-1).pop()
 }
+
+
+
+io.on('connection', function (_socket) {
+  console.log('got connection');
+  setSocket(_socket)
+  renderGui()
+
+  socket().on("userSend",onLineInput)
+
+});
+
+console.log('server starting to listen');
+server.listen(8080)
+
+app.get('/', function (req, res) {
+  res.sendFile(__dirname + '/index.html');
+});

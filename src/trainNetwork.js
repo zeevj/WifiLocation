@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('fs')
 const brain = require('brain')
+const socket = require('./server').getSocket
 
 
 function trainNetwork(){

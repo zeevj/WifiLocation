@@ -1,0 +1,129 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>WIFI Location</title>
+  </head>
+  <body>
+    <h1>WIFI Location</h1>
+    <pre id="app"></pre>
+    <input type="text" id="userPress" onkeypress="handlePress(event)">
+    <div id="wifiList"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+
+      let flexContainer =  {
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'nowrap',
+          justifyContent: 'flex-start',
+          alignContent: 'center',
+          alignItems: 'flex-end',
+          height: '300px'
+      }
+
+      var socket = io.connect();
+      let allWifis = []
+      let allWifisHistory = []
+
+
+      socket.on('text', (text)=>{
+        document.getElementById('app').innerHTML = text
+      })
+
+      let number = 0
+
+      socket.on('wifiList', (wifiArray)=>{
+        let dom = document.getElementById('wifiList')
+
+
+
+        let currentSampleDiv = document.createElement('div')
+
+        for (elm in flexContainer){
+          currentSampleDiv.style[elm] = flexContainer[elm]
+        }
+
+        currentSampleDiv.style.left = number + 'px'
+        currentSampleDiv.style.top = (number * 2) + 'px'
+        currentSampleDiv.id = number + '_'
+        currentSampleDiv.style.position = 'absolute'
+
+        number += 5
+
+        dom.appendChild(currentSampleDiv)
+
+        wifiArray.forEach( elm=>{
+          if ( allWifis.filter(wifi=>( wifi.mac === elm.mac)).length === 0 ) {
+            //allWifis.push(elm)
+
+            // console.log('adding new wifi, ' + elm.ssid);
+
+            // create dom element
+
+
+            let mainDiv = document.createElement('div')
+            mainDiv.id = elm.mac
+            mainDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.43)'
+            mainDiv.style.margin = '100px'
+            mainDiv.style.width = '5px'
+            mainDiv.style.flex = "0 1 5px"
+            let hi = ((elm.rssi + 100) * 5).toString() + 'px'
+            mainDiv.style.height = hi
+            mainDiv.style.transition = 'height 0.5s'
+            // mainDiv.style.stroke = 'black'
+            mainDiv.style.borderStyle = 'solid'
+            mainDiv.style.borderWidth = '1px'
+
+
+            let nameDiv = document.createElement('div')
+            nameDiv.innerHTML = elm.ssid.substring(0,4)
+            nameDiv.style.transform = 'rotate(-90deg)'
+            nameDiv.style.width = '30px'
+            nameDiv.style.position= 'relative'
+            nameDiv.style.left = '-5px'
+
+
+            // mainDiv.appendChild(nameDiv)
+            currentSampleDiv.appendChild(mainDiv)
+          }
+        })
+
+        allWifisHistory.push(allWifis)
+
+
+        allWifisHistory[allWifisHistory.length - 1].forEach(elm=>{
+          let currWifi = wifiArray.find(wifi=>( ( wifi.mac === elm.mac ) ))
+
+          if (currWifi === undefined) {
+            let bar = document.getElementById(elm.mac)
+            bar.style.backgroundColor = 'gray'
+          }else{
+            let bar = document.getElementById(currWifi.mac)
+            let hi = ((currWifi.rssi + 100) * 5).toString() + 'px'
+            bar.style.height = hi
+            bar.style.backgroundColor = 'red'
+          }
+        })
+
+
+      })
+
+
+
+      function handlePress(e){
+        if ( e.keyCode === 13 ) {
+          var text_input = document.getElementById ('userPress');
+          socket.emit('userSend',text_input.value)
+          text_input.value = ''
+        }
+      }
+
+      window.onload = function(){
+        var text_input = document.getElementById ('userPress');
+        text_input.focus ();
+        text_input.select ();
+      }
+    </script>
+  </body>
+</html>

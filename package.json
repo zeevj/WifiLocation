@@ -20,6 +20,8 @@
   "homepage": "https://github.com/zeevj/WifiLocation#readme",
   "dependencies": {
     "brain": "^0.7.0",
-    "node-wifi-scanner": "^1.0.0"
+    "express": "^4.14.0",
+    "node-wifi-scanner": "^1.0.0",
+    "socket.io": "^1.5.0"
   }
 }
