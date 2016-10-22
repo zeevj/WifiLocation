@@ -2,25 +2,87 @@
   <head>
     <meta charset="utf-8">
     <title>WIFI Location</title>
+
+    <style>
+      .bar{
+        background-color: rgba(255, 0, 0, 0.43);
+        margin: 10px;
+        width: 2px;
+        flex: '0 1 2px';
+        transition: height 0.5s;
+        /*border-style: solid;*/
+        /*border-width: 1px;*/
+      }
+
+      .flexContainer{
+          display: flex;
+          flex-direction: row;
+          flex-wrap: nowrap;
+          justify-content: flex-start;
+          align-content: center;
+          align-items: flex-end;
+          height: 300px;
+      }
+    </style>
+
   </head>
   <body>
     <h1>WIFI Location</h1>
     <pre id="app"></pre>
     <input type="text" id="userPress" onkeypress="handlePress(event)">
-    <div id="wifiList"></div>
+    <div style="position: absolute;" id="wifiList"></div>
+
+
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
 
-      let flexContainer =  {
-          display: 'flex',
-          flexDirection: 'row',
-          flexWrap: 'nowrap',
-          justifyContent: 'flex-start',
-          alignContent: 'center',
-          alignItems: 'flex-end',
-          height: '300px'
+      let dom = document.getElementById('wifiList')
+
+      // function updateGraph(x){
+      //   number = x / 10.0
+      //   dom.childNodes.forEach((sampleDiv,i)=>{
+      //     sampleDiv.style.left = (number - 20) * i + 'px'
+      //     sampleDiv.style.top = (Math.sin(number / 20.0 - 50) * i * 20) + 'px'
+      //   })
+      // }
+
+      let currentVisibleBar = 0
+
+      function animateBarPath(x){
+        if ( dom.childNodes.length !== 0 ) {
+          //currentVisibleBar = (currentVisibleBar + 1) % dom.childNodes.length
+          currentVisibleBar = Math.floor(x / 10)
+          console.log(currentVisibleBar);
+        }
+        console.log(currentVisibleBar)
+        dom.childNodes.forEach((sampleDiv,i)=>{
+
+          if ( i === currentVisibleBar){
+
+            sampleDiv.style.opacity = '1.0'
+          } else {
+            sampleDiv.style.opacity= '0.1'
+          }
+        })
       }
+
+      // setInterval(function () {
+      //   animateBarPath()
+      // }, 100);
+
+
+
+      function onMousemove(e){
+        animateBarPath(e.clientX)
+      }
+
+      var elem = document.getElementById('wifiList');
+      elem.addEventListener('mousemove', onMousemove, false);
+
+
+
+
 
       var socket = io.connect();
       let allWifis = []
@@ -34,22 +96,18 @@
       let number = 0
 
       socket.on('wifiList', (wifiArray)=>{
-        let dom = document.getElementById('wifiList')
 
 
 
         let currentSampleDiv = document.createElement('div')
-
-        for (elm in flexContainer){
-          currentSampleDiv.style[elm] = flexContainer[elm]
-        }
+        currentSampleDiv.className += 'flexContainer'
 
         currentSampleDiv.style.left = number + 'px'
         currentSampleDiv.style.top = (number * 2) + 'px'
         currentSampleDiv.id = number + '_'
         currentSampleDiv.style.position = 'absolute'
 
-        number += 5
+        number += 1
 
         dom.appendChild(currentSampleDiv)
 
@@ -64,17 +122,10 @@
 
             let mainDiv = document.createElement('div')
             mainDiv.id = elm.mac
-            mainDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.43)'
-            mainDiv.style.margin = '100px'
-            mainDiv.style.width = '5px'
-            mainDiv.style.flex = "0 1 5px"
+            mainDiv.className += 'bar'
+
             let hi = ((elm.rssi + 100) * 5).toString() + 'px'
             mainDiv.style.height = hi
-            mainDiv.style.transition = 'height 0.5s'
-            // mainDiv.style.stroke = 'black'
-            mainDiv.style.borderStyle = 'solid'
-            mainDiv.style.borderWidth = '1px'
-
 
             let nameDiv = document.createElement('div')
             nameDiv.innerHTML = elm.ssid.substring(0,4)
