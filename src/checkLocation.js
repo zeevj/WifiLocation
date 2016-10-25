@@ -12,29 +12,27 @@ function checkNetwork(input){
     let file = __dirname+'/../data/net.json'
     fs.readFile(file, 'utf8', function (err,data) {
       neuralNetwork.fromJSON(JSON.parse(data))
+      console.log('input',input)
       var output = neuralNetwork.run(input)
-      console.log(output)
-
-      if (socket) {
-        socket.emit('text', output)
-      }
+      console.log('output',output)
 
       let name = ''
       let winner = 0.0
       for (let elm in output){
-
-        if (winner < output[elm]){
+        if  (winner < output[elm]){
           winner = output[elm]
           name = elm
+
         }
       }
 
-      let text = '\nTHE WINNER IS: ' + name  + ' ' + winner
-      console.log(text);
+      let line = 'THE WINNER IS: ' + name  + ' ' + winner
+      console.log('\n' + line)
 
-      if (socket) {
-        socket.emit('text', text)
+      if ( socket() ) {
+        socket().emit('locationGuess', line)
       }
+
       resolve()
     })
   })
@@ -45,7 +43,6 @@ function checkLocation(){
   return new Promise( (resolve, reject) => {
 
     guessLocation()
-    .then(guessLocation)
     .then(checkNetwork)
     .then(guessLocation)
     .then(checkNetwork)

@@ -10,7 +10,7 @@ const learnLocation = require('./src/learnLocation').learnLocation
 const trainNetwork = require('./src/trainNetwork').trainNetwork
 const checkLocation = require('./src/checkLocation').checkLocation
 const showRSSI = require('./src/learnLocation').showRSSI
-let socket = require('./src/server').getSocket
+let getSocket = require('./src/server').getSocket
 let setSocket = require('./src/server').setSocket
 
 
@@ -72,7 +72,9 @@ function onLineInput(line){
           break
 
         case 4:
-          socket().emit('text', 'starting RSSI realtime list')
+          if (getSocket()){
+            getSocket().emit('text', 'starting RSSI realtime list')
+          }
           showRSSI().then(()=>{
             setTimeout(function () {
               renderGui()
@@ -164,9 +166,9 @@ function renderGui(line){
 
 
   console.log(text)
-  
-  if ( text !== '' && socket() ) {
-    socket().emit('text', text)
+
+  if ( text !== '' && getSocket() ) {
+    getSocket().emit('text', text)
   }
   return text
 }
@@ -183,8 +185,9 @@ io.on('connection', function (_socket) {
   console.log('got connection');
   setSocket(_socket)
   renderGui()
-
-  socket().on("userSend",onLineInput)
+  if ( getSocket() ){
+    getSocket().on("userSend",onLineInput)
+  }
 
 });
 

@@ -10,8 +10,6 @@
         width: 2px;
         flex: '0 1 2px';
         transition: height 0.5s;
-        /*border-style: solid;*/
-        /*border-width: 1px;*/
       }
 
       .flexContainer{
@@ -30,6 +28,9 @@
     <h1>WIFI Location</h1>
     <pre id="app"></pre>
     <input type="text" id="userPress" onkeypress="handlePress(event)">
+    <div>Used Wifis:</div>
+    <div id="usedWifis"></div>
+    <div id="guessLocation"></div>
     <div style="position: absolute;" id="wifiList"></div>
 
 
@@ -53,9 +54,9 @@
         if ( dom.childNodes.length !== 0 ) {
           //currentVisibleBar = (currentVisibleBar + 1) % dom.childNodes.length
           currentVisibleBar = Math.floor(x / 10)
-          console.log(currentVisibleBar);
+          // console.log(currentVisibleBar);
         }
-        console.log(currentVisibleBar)
+        // console.log(currentVisibleBar)
         dom.childNodes.forEach((sampleDiv,i)=>{
 
           if ( i === currentVisibleBar){
@@ -67,12 +68,6 @@
         })
       }
 
-      // setInterval(function () {
-      //   animateBarPath()
-      // }, 100);
-
-
-
       function onMousemove(e){
         animateBarPath(e.clientX)
       }
@@ -80,14 +75,9 @@
       var elem = document.getElementById('wifiList');
       elem.addEventListener('mousemove', onMousemove, false);
 
-
-
-
-
       var socket = io.connect();
       let allWifis = []
       let allWifisHistory = []
-
 
       socket.on('text', (text)=>{
         document.getElementById('app').innerHTML = text
@@ -97,11 +87,8 @@
 
       socket.on('wifiList', (wifiArray)=>{
 
-
-
         let currentSampleDiv = document.createElement('div')
         currentSampleDiv.className += 'flexContainer'
-
         currentSampleDiv.style.left = number + 'px'
         currentSampleDiv.style.top = (number * 2) + 'px'
         currentSampleDiv.id = number + '_'
@@ -112,14 +99,8 @@
         dom.appendChild(currentSampleDiv)
 
         wifiArray.forEach( elm=>{
+
           if ( allWifis.filter(wifi=>( wifi.mac === elm.mac)).length === 0 ) {
-            //allWifis.push(elm)
-
-            // console.log('adding new wifi, ' + elm.ssid);
-
-            // create dom element
-
-
             let mainDiv = document.createElement('div')
             mainDiv.id = elm.mac
             mainDiv.className += 'bar'
@@ -134,14 +115,17 @@
             nameDiv.style.position= 'relative'
             nameDiv.style.left = '-5px'
 
-
-            // mainDiv.appendChild(nameDiv)
             currentSampleDiv.appendChild(mainDiv)
           }
         })
 
         allWifisHistory.push(allWifis)
 
+        let usedWifiNames = wifiArray.reduce((prev,wifi)=>{
+          return prev + ', ' + wifi.ssid
+        },'')
+
+        document.getElementById('usedWifis').innerHTML = usedWifiNames
 
         allWifisHistory[allWifisHistory.length - 1].forEach(elm=>{
           let currWifi = wifiArray.find(wifi=>( ( wifi.mac === elm.mac ) ))
@@ -156,11 +140,11 @@
             bar.style.backgroundColor = 'red'
           }
         })
-
-
       })
 
-
+      socket.on('locationGuess', text=>{
+        document.getElementById('guessLocation').innerHTML = text
+      })
 
       function handlePress(e){
         if ( e.keyCode === 13 ) {
