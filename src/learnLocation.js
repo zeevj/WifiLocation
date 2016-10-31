@@ -58,9 +58,11 @@ function addArrayToFile(data){
 
 function convertToTrainArray(wifiArray) {
   return new Promise( (resolve, reject) => {
-    resolve(wifiArray.map( elm=>(
-      {}[elm.ssid] = dbToFloat(elm.rssi)
-    )))
+    resolve(wifiArray.map( elm=>{
+      let obj = {}
+      obj[elm.mac] = dbToFloat(elm.rssi)
+      return obj
+    }))
   })
 }
 

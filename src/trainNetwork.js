@@ -16,76 +16,94 @@ function openRssiFile(){
   })
 }
 
-function createCSVFile(){
-  openRssiFile()
-    .then(jsFile=>{
+function createArrayFromJson(jsFile){
+  return new Promise( (resolve, reject) => {
 
-      let inputPerSample = {};
-      let csvString = ''
+    let inputPerSample = {};
 
-      for (let key in jsFile) {
-        for (let sample in jsFile[key].data){
-          inputPerSample[sample] = 0
-        }
+    for (let key in jsFile) {
+      for (let sample in jsFile[key].data){
+        inputPerSample[sample] = 0
+        inputPerSample.locationName = 'none'
       }
+    }
 
-      inputPerSample.locationName = 'none'
 
-      let csvArray = []
+    let csvArray = []
 
-      for (let key in jsFile) {
-        let smp = Object.assign({},inputPerSample)
-        smp.locationName = jsFile[key].locationName
-        for (let sample in jsFile[key].data){
-          smp[sample] = jsFile[key].data[sample]
-        }
-        csvArray.push(smp)
+    for (let key in jsFile) {
+      let smp = Object.assign({},inputPerSample)
+      smp.locationName = jsFile[key].locationName
+      smp.input = {}
+      for (let sample in jsFile[key].data){
+        Object.assign(smp.input,jsFile[key].data[sample])
       }
+      csvArray.push(smp)
 
+    }
 
+    resolve(csvArray)
+  })
+}
 
-      csvString = csvArray.reduce((prev, curr, index)=>{
-        if (index === 0) {
-          prev += 'locationName' + ','
-          for (let key in curr) {
-            if ( key !== 'locationName') {
-              prev += key + ','
-            }
-          }
-          prev = prev.substring(0, prev.length - 1)
-          prev += '\n'
-        }
+function createCSVStringFromArray(array){
 
-        prev += curr.locationName + ','
+  return new Promise( (resolve, reject) => {
+    let csvString = ''
+    csvString = array.reduce((prev, curr, index)=>{
+      if (index === 0) {
+        prev += 'locationName' + ','
         for (let key in curr) {
           if ( key !== 'locationName') {
-            prev += curr[key] + ','
+            prev += key + ','
           }
         }
         prev = prev.substring(0, prev.length - 1)
         prev += '\n'
 
-        return  prev
-      },'')
+      }
 
-      console.log(csvString);
+      prev += curr.locationName + ','
+      for (let key in curr) {
+        if ( key !== 'locationName') {
+          prev += curr[key] + ','
+        }
+      }
+      prev = prev.substring(0, prev.length - 1)
+      prev += '\n'
 
+      return  prev
+    },'')
+
+    resolve(csvString)
+  })
+}
+
+function createCSVFile(){
+  openRssiFile()
+    .then(createArrayFromJson)
+    .then(createCSVStringFromArray)
+    .then(csvString=>{
+      console.log(csvString)
     })
 }
 
 function trainNetwork(){
   return new Promise( (resolve, reject) => {
     openRssiFile()
+      .then(createArrayFromJson)
       .then(jsFile=>{
         let netDataArray = []
 
         for (let key in jsFile) {
           let obj = {input: {}, output: {}}
 
-          obj.input = jsFile[key].data,
+          obj.input = jsFile[key].input,
           obj.output[jsFile[key].locationName] = 1
           netDataArray.push(obj)
         }
+
+        console.log(netDataArray);
 
         let neuralNetwork = new brain.NeuralNetwork({
           // hiddenLayers: [netDataArray.length, netDataArray.length]
@@ -109,6 +127,7 @@ function trainNetwork(){
   })
 }
 
+
 function writeNetworkToFile(jsObj){
   return new Promise( (resolve, reject) => {
     const file = __dirname+'/../data/net.json'
@@ -121,7 +140,8 @@ function writeNetworkToFile(jsObj){
 }
 
 if (process.argv[2] !== undefined){
-  createCSVFile()
+  // createCSVFile()
+  trainNetwork2()
 }
 
 module.exports = {
